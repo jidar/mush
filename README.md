@@ -1,6 +1,11 @@
 # mush
 A helpful multi-utility cli that takes care of a lot of the configuration needed to use the various openstack clients.
 
+## Configuration
+    1) Make a .mush folder in your home or current dir
+    2) Put a datastore.csv file in it (see the sample in the repo)
+    3) Put a file named config in there (see sample config)
+
 ## The basic idea
 
 Working with the openstack command line utilities can be a little frustrating at times, especially if you routinely have to use several different combinations of users and environment-specific configuration for different deployments.

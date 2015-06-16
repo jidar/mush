@@ -1,0 +1,6 @@
+[default_plugins]
+data_store=csv
+persist_shell=gnome-terminal
+
+[data_store.csv]
+location=~/.mush/datastore.csv
