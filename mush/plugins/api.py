@@ -48,5 +48,6 @@ if not __loaded__:
 
 # Build API
 for interface_class in interfaces.registry.get('interfaces'):
-    globals()[interface_class.__name__] = _APICallClass(
-        interface_class.__interface__)
+    if interface_class.__api_visible__:
+        globals()[interface_class.__name__] = _APICallClass(
+            interface_class.__interface__)

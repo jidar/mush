@@ -16,18 +16,13 @@ class data_store(interfaces.data_store):
         self._row_data = OrderedDict()
         self._parse_csv()
 
+    @interfaces.fallthrough_pipeline('access_secret')
     def environment_variables(self, alias):
         # Extract the relevant environment variables for alias
         env_vars = OrderedDict()
         column_index = self._column_headers.index(alias)
         for row_header, row in self._row_data.items():
             env_vars[row_header] = row[column_index]
-
-        # TODO: Implement an pipeline extension mechanism, inject an extension
-        # point here, and reimplement this as a default extension.
-        # This comment is also in interfaces.py
-        env_vars = self.exec_bash(env_vars)
-
         return env_vars
 
     def available_aliases(self):

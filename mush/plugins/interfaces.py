@@ -2,24 +2,45 @@ from collections import OrderedDict
 from subprocess import call, Popen, PIPE, CalledProcessError
 import os
 
-from mush.config import config
+from mush import config
 
 # Stores all registered extensions in this module
 class _Registry(dict):
 
+    def interface(self, interface_name):
+        return self.get('interfaces').get(interface_name)
+
     def interfaces(self):
         return self.get('interfaces')
 
-    def plugins(self):
+    def plugins(self, interface_name=None):
+        if interface_name:
+            return self.get('plugins').get(interface_name)
         return self.get('plugins')
 
+    def plugin(self, interface_name, keyname):
+        return self.get('plugins').get(interface_name).get(keyname)
+
     def keynames(self, interface_name):
-        if interface_name:
-            return self.get('plugins').get(interface_name).keys()
+        return self.get('plugins').get(interface_name).keys()
 
 registry = _Registry()
 registry['interfaces'] = list()
 registry['plugins'] = dict()
+
+
+def fallthrough_pipeline(*pipeline_interfaces):
+    def decorator(function):
+        def wrapper(*args, **kwargs):
+            val = function(*args, **kwargs)
+            for interface_name in pipeline_interfaces:
+                for keyname in registry.keynames(interface_name):
+                    plugin = registry.plugin(interface_name, keyname)
+                    if plugin:
+                        val = plugin()(val)
+            return val
+        return wrapper
+    return decorator
 
 
 class _AutoRegisteringPluginMeta(type):
@@ -30,6 +51,7 @@ class _AutoRegisteringPluginMeta(type):
         plugin = super(_AutoRegisteringPluginMeta, cls).__new__(
             cls, class_name, bases, attrs)
 
+        # Register interface implementations (aka, 'plugins')
         if plugin.__keyname__ and plugin.__interface__:
             registry['plugins'][plugin.__interface__] = \
                 registry['plugins'].get(plugin.__interface__, dict())
@@ -37,6 +59,7 @@ class _AutoRegisteringPluginMeta(type):
                 =plugin
         elif not plugin.__keyname__ and plugin.__interface__:
             registry['interfaces'].append(plugin)
+
         return plugin
 
 
@@ -44,6 +67,7 @@ class AutoRegisteringPlugin(object):
     __metaclass__ = _AutoRegisteringPluginMeta
     __keyname__ = None
     __interface__ = None
+    __api_visible__ = True
 
 
 class persist_shell(AutoRegisteringPlugin):
@@ -54,15 +78,24 @@ class persist_shell(AutoRegisteringPlugin):
         raise NotImplementedError
 
 
+class access_secret(AutoRegisteringPlugin):
+    __interface__ = 'access_secret'
+    __api_visible__ = False
+
+    def __call__(self, value):
+        raise NotImplementedError
+
+
 class data_store(AutoRegisteringPlugin):
     """implementer should define __keyname__"""
     __interface__ = 'data_store'
+    __config__ = ['location']
 
     def __init__(self, data_file=None):
         raise NotImplementedError
 
     def configured_data_file(self):
-        return os.path.expanduser(config.get('data_store.csv', 'location'))
+        return os.path.expanduser(config.default("data_store", "location"))
 
     def environment_variables(self, alias):
         """Must accept a single string. Returns an OrderedDict"""
@@ -71,19 +104,3 @@ class data_store(AutoRegisteringPlugin):
     def aliases(self):
         """Returns a List"""
         raise NotImplementedError
-
-    # TODO: Implement an pipeline extension mechanism, inject an extension
-    # point in environment_variables, and reimplement this as a default 
-    # extension. This comment is also in the default plugin.
-    def exec_bash(self, environment_variables):
-        for k,v in environment_variables.iteritems():
-            if v.startswith('EXECBASH:'):
-                cmd = v.replace('EXECBASH:', '')
-                p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
-                std_out, std_err = p.communicate()
-                if std_err and p.returncode:
-                    print "EXECBASH command exited with a non-zero return code"
-                    print std_err
-                    exit(p.returncode)
-                environment_variables[k] = str(std_out).splitlines()[0]
-        return environment_variables

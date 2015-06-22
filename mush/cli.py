@@ -128,36 +128,63 @@ class CLI(object):
     class show(_command):
         """Output a list of all environment variables the user/alias has
         defined.  By default this is a list of strings.
-        --exportable:  Display the environment vars such that you can copy
-                       them and paste them as a bash command.
-        --table:       Display the environment vars in a pretty table.
+        --exportable  Display the environment vars such that you can copy
+                      them and paste them as a bash command.
+        --table       Display the environment vars in a pretty table.
+        --all         Also display keys with no configured value
+        --keys        Only display keys
+        --detail=<keys>
+                      Display only the keys specififed, and their values
         """
+
+        @classmethod 
+        def target_keys(cls, flags, env_vars):
+            if not flags.get('all'):
+                env_vars = _remove_empty_kv_pairs(env_vars)
+
+            if flags.get('detail'):
+                keys = flags.get('detail').split(',')
+                env_vars = {k:v for k,v in env_vars.items() if k in keys}
+
+            if flags.get('keys'):
+                env_vars = {k:'' for k in env_vars.keys()}
+
+            return env_vars
+
+        @classmethod
+        def exportable(cls, alias, env_vars):
+            print "\n","#", alias.upper()
+            for k,v in env_vars.iteritems():
+                print "export {}={}\n".format(k,v)
+
+        @classmethod
+        def plaintext_list(cls, alias, env_vars):
+            print "-" * 30
+            print alias.upper()
+            for k,v in env_vars.iteritems():
+                print k, v
+
+        @classmethod
+        def table(cls, alias, env_vars):
+            p = prettytable.PrettyTable(
+                    field_names=["Environment Variable", "Value"])
+            [p.add_row((k,v,)) for k,v in env_vars.iteritems()]
+            print "\n", alias.upper()
+            print p
 
         @classmethod
         def _call(cls, data_store, aliases, *args, **flags):
             cls.check_aliases(aliases)
             for alias in aliases:
-                env_vars = _remove_empty_kv_pairs(
-                    data_store.environment_variables(alias))
+                env_vars = cls.target_keys(
+                    flags, data_store.environment_variables(alias))
 
                 if flags.get('exportable'):
-                    print "\n","#", alias.upper()
-                    for k,v in env_vars.iteritems():
-                        print "export {}={}\n".format(k,v)
-
+                    cls.exportable(alias, env_vars)
                 elif flags.get('table'):
-                    env_vars = _remove_empty_kv_pairs(
-                        data_store.environment_variables(alias))
-                    p = prettytable.PrettyTable(
-                            field_names=["Environment Variable", "Value"])
-                    [p.add_row((k,v,)) for k,v in env_vars.iteritems()]
-                    print p
-
+                    cls.table(alias, env_vars)
                 else:
-                    # Regular list
-                    print "-" * 30
-                    for k,v in env_vars.iteritems():
-                        print k, v
+                    cls.plaintext_list(alias, env_vars)
 
     class persist(_command):
         """Spawn a new shell with all the environment variables set for 
@@ -198,6 +225,18 @@ class CLI(object):
                 dispatch_to_shell(
                     cmd, data_store, alias, args,
                     suppress_stderr=flags.get('suppress_stderr', None))
+
+    class generate_config(_command):
+        """Generates a configuration file based on available plugins"""
+
+        @classmethod
+        def _call(cls, data_store, aliases, *args, **flags):
+            from mush.plugins.interfaces import registry
+            for interface in registry.plugins().keys():
+                print ''
+                for keyname in registry.plugins(interface):
+                    string = "[{}.{}]".format(interface, keyname)
+                    print string
 
 
 def entry_point():
