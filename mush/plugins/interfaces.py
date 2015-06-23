@@ -87,9 +87,7 @@ class access_secret(AutoRegisteringPlugin):
 
 
 class data_store(AutoRegisteringPlugin):
-    """implementer should define __keyname__"""
     __interface__ = 'data_store'
-    __config__ = ['location']
 
     def __init__(self, data_file=None):
         raise NotImplementedError
