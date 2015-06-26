@@ -1,23 +1,24 @@
 #! /usr/bin/python
 import os
-import sys
 import prettytable
+import sys
 from subprocess import call
 from collections import OrderedDict
-
 from mush import config
 from mush.plugins import api
 
 
 # TODO: Maybe make this an auto interface like plugins.api
 class CLI(object):
-    # TODO: Get rid of all the classmethod-ness / make the entire thing
-    #       instantiate before running
-    # TODO: Now that everything is in the CLI class, make the thing
-    #       an interface, and make it extensible so that new extensions #
-    #       can add to the interface AND define plugins for those
-    #       interfaces-extensions. THEN move the implementation here to a
-    #       plugin.
+    """
+    TODO: Get rid of all the classmethod-ness / make the entire thing
+          instantiate before running
+    TODO: Now that everything is in the CLI class:
+          Make the thing an interface, AND make it extensible so that
+          new extensions (not implemented yet) can add to the interface.
+          Define plugins for those interfaces-extensions.
+          Move the implementation here to a plugin.
+    """
 
     class _command(object):
         """All CLI commands should inherit from this, for reasons."""
@@ -62,14 +63,16 @@ class CLI(object):
     @classmethod
     def _command_names(cls, python_names=False):
         cmds = []
+        # Gather all the classes that inherit from _command, except for _command
         for k, v in cls.__dict__.items():
             try:
-                if cls._command in v.__mro__ and v.__name__ != '_command':
+                if issubclass(v, cls._command) and v is not cls._command:
                     name = k if python_names else k.replace('_', '-')
                     cmds.append(name)
-            except Exception as e:
+            except TypeError:
+                # The dict is full of things that aren't classes, so 
+                # issubclass explodes when they're passed in.
                 pass
-
         return cmds
 
     @classmethod
@@ -93,7 +96,7 @@ class CLI(object):
             quit_with_main_help("No options given.")
 
         known_aliases = data_store.available_aliases()
-        # Parse out the aliases, mush command and flags from the client 
+        # Parse out the aliases, mush command and flags from the client
         # command / client command args
         while args:
             arg = args[0]
@@ -135,8 +138,9 @@ class CLI(object):
             mush_command = "call"
             print "calling: {}".format(" ".join(args))
         elif not client_command and not mush_command:
-            # If no mush command is set by this point, then no previous rule to set
-            # one applied, and one was not provided.  Call help for the user.
+            # If no mush command is set by this point, then no previous rule
+            # to set one applied, and a mush command was not provided.
+            # Call help for the user.
             args, flags, mush_command = [], {}, "help"
 
         cls._dispatch(mush_command, data_store, aliases, args, flags)
@@ -150,7 +154,6 @@ class CLI(object):
 
         # Only allow calls to _command objects
         command = getattr(cls, cmd)
-        exception = None
 
         if cls._command in command.__mro__ and command.__name__ != '_command':
 
@@ -162,15 +165,15 @@ class CLI(object):
                 command.check_flags(flags)
             return command._call(data_store, aliases, args, flags)
 
-
     class help(_command):
         """ Dynamically generates help based on the help() functions
-        defined in each _command class.  By default, the help() methods
+        defined in each _command based class. By default, the help() methods
         return the docstring of the command class...which is why you're seeing
-        this message right now.  Who calls 'help --help' anyway?!"""
+        this message right now. Who calls 'help --help' anyway?!"""
 
         @classmethod
         def _call(cls, data_store, aliases, args, flags):
+            """TODO: Maybe use textwrapper to clean this up?"""
             spacer = "    "
             helplines = []
             helplines.append("")
@@ -185,14 +188,13 @@ class CLI(object):
                 "[client command passthrough]\n"
                 .format(spacer))
             cmds = CLI._command_names(python_names=True)
-            cmds.remove('help')
+            cmds.remove('help')  # Don't print help's help :)
             for name in cmds:
                 helplines.append(
-                    "{0}{1}".format(spacer, name.replace('_','-')))
+                    "{0}{1}".format(spacer, name.replace('_', '-')))
                 helpdoc = getattr(CLI, name).help()
                 helplines.append("{0}{1}\n".format(spacer*2, helpdoc))
             print "\n".join(helplines)
-
 
     class aliases(_command):
         """Lists all available aliases in the datastore"""
@@ -201,57 +203,58 @@ class CLI(object):
         def _call(cls, data_store, aliases, args, flags):
             print "\n".join(data_store.available_aliases())
 
-
     class datastore(_command):
         """Output a list of all environment variables the user/alias has
         defined.  By default this is a list of strings.
 
-        <alias(es)>:  Requires at least one alias.
-        --exportable  Display the environment vars such that you can copy
-                      them and paste them as a bash command.
-        --table       Display the environment vars in a pretty table.
-        --show-blanks Also display keys that have no configured value
-                      (By default, those keys are not show)
-        --keys-only   Only display keys
-        --detail=<keys>
-                      Display only the keys specififed, and their values
+        <alias(es)>:    Requires at least one alias.
+        --exportable    Display the environment vars such that you can copy
+                        them and paste them as a bash command.
+        --table         Display the environment vars in a pretty table.
+        --show-blanks   Also display keys that have no configured value
+                        (By default, those keys are not show)
+        --keys-only     Only display keys
+        --detail=<keys> Display only the keys specififed, and their values
         """
         __known_flags__ = [
             'show-blanks', 'detail', 'keys-only', 'exportable', 'table']
 
-        @classmethod 
+        @classmethod
         def target_keys(cls, flags, env_vars):
+            """ Builds the list of keys that wil be used by the 
+            print/formatting functions"""
+
             if not flags.get('show-blanks'):
                 env_vars = OrderedDict(
                     (k, v) for k, v in env_vars.iteritems() if v)
 
             if flags.get('detail'):
                 keys = flags.get('detail').split(',')
-                env_vars = {k:v for k,v in env_vars.items() if k in keys}
+                env_vars = {k: v for k, v in env_vars.items() if k in keys}
 
             if flags.get('keys-only'):
-                env_vars = {k:'' for k in env_vars.keys()}
+                env_vars = {k: '' for k in env_vars.keys()}
 
             return env_vars
 
         @classmethod
         def exportable(cls, alias, env_vars):
-            print "\n","#", alias.upper()
-            for k,v in env_vars.iteritems():
-                print "export {}={}".format(k,v)
+            print "\n", "#", alias.upper()
+            for k, v in env_vars.iteritems():
+                print "export {}={}".format(k, v)
 
         @classmethod
         def plaintext_list(cls, alias, env_vars):
             print "-" * 30
             print alias.upper()
-            for k,v in env_vars.iteritems():
+            for k, v in env_vars.iteritems():
                 print k, v
 
         @classmethod
         def table(cls, alias, env_vars):
             p = prettytable.PrettyTable(
-                    field_names=["Environment Variable", "Value"])
-            [p.add_row((k,v,)) for k,v in env_vars.iteritems()]
+                field_names=["Environment Variable", "Value"])
+            [p.add_row((k, v, )) for k, v in env_vars.iteritems()]
             print "\n", alias.upper()
             print p
 
@@ -262,27 +265,32 @@ class CLI(object):
                 env_vars = cls.target_keys(
                     flags, data_store.environment_variables(alias))
 
+                # TODO: Once this class is an interface, make this call
+                # pluggable so that more print options can be added via 
+                # plugins.
                 if flags.get('exportable'):
                     cls.exportable(alias, env_vars)
 
                 if flags.get('table'):
                     cls.table(alias, env_vars)
-                
+
                 if not flags.get('table') and not flags.get('exportable'):
                     cls.plaintext_list(alias, env_vars)
 
     class persist(_command):
-        """Spawn a new shell with all the environment variables set for 
+        """Spawn a new shell with all the environment variables set for
         the given user/alias.
 
-        --plugin <plugin>: Override configured persist-shell plugin keyname.
+        <alias>:        Requires one alias.
+        --plugin <plugin>: 
+                        Override configured persist-shell plugin keyname.
         --shell-override <cmd>:
-                           Ignore any installed plugins and try to run this
-                           command directly via a subprocess call.
-                           (Useful for one-off uses that you don't use often
-                            enough to justify writing a plugin)
+                        Ignore any installed plugins and try to run this
+                        command directly via a subprocess call.
+                        (Useful for one-off uses that you don't use often
+                        enough to justify writing a plugin)
         """
-        __known_flags__ = ['shell-override', 'plugin']
+        __flags__ = ['shell-override', 'plugin']
 
         @classmethod
         def _call(cls, data_store, aliases, args, flags):
@@ -291,13 +299,13 @@ class CLI(object):
             for alias in aliases:
                 env = os.environ.copy()
                 env.update(data_store.environment_variables(alias))
-                plugin_keyname = config.config.get(
+                plugin_keyname = flags.get('plugin') or config.config.get(
                     "default_plugins", "persist_shell")
                 if flags.get('shell-override'):
                     call(flags.get('shell-override'), env=env)
                     continue
-                api.persist_shell(keyname=plugin_keyname).persist(env)
-
+                api.persist_shell(keyname=plugin_keyname).persist(
+                    env, alias=alias)
 
     class call(_command):
         """Calls client command once for every alias listed
@@ -305,13 +313,13 @@ class CLI(object):
         Note: This is the default command called, you don't need to specify
         'call', you can just run 'mush <alias(es)> <client command>
 
-        <alias(es)>:  Requires at least one alias.
-        --no-stderr:  Pipes the stderr output from the client command
-                      to the system's version of /dev/null
-        --show-alias: Prints the alias used before making the client call.
-                      Useful when making calls to multiple aliases.
+        <alias(es)>:    Requires at least one alias.
+        --no-stderr:    Pipes the stderr output from the client command
+                        to the system's version of /dev/null
+        --show-alias:   Prints the alias used before making the client call.
+                        Useful when making calls to multiple aliases.
         """
-        __known_flags__ = ['show-alias', 'no-stderr']
+        __flags__ = ['show-alias', 'no-stderr']
 
         @classmethod
         def _dispatch_to_shell(cls, cmd, data_store, alias, args, flags):

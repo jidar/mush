@@ -74,7 +74,7 @@ class persist_shell(AutoRegisteringPlugin):
     __interface__ = 'persist_shell'
 
     @staticmethod
-    def persist(env):
+    def persist(*args, **kwargs):
         raise NotImplementedError
 
 

@@ -10,5 +10,5 @@ class persist_shell(interfaces.persist_shell):
     __keyname__="bash"
 
     @staticmethod
-    def persist(env):
+    def persist(env, *args, **kwargs):
         call('bash', env=env)

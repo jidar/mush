@@ -7,8 +7,10 @@ from mush.plugins import interfaces
 
 
 class persist_shell(interfaces.persist_shell):
-    __keyname__="gnome-terminal"
+    __keyname__="guake"
 
     @staticmethod
     def persist(env, *args, **kwargs):
-        call('gnome-terminal', env=env)
+        alias = kwargs.get('alias', '')
+        cmd = 'guake -n {tabname}; guake -r {tabname}'.format(tabname=alias)
+        call(cmd, env=env, shell=True)
