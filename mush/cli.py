@@ -23,7 +23,7 @@ class CLI(object):
     class _command(object):
         """All CLI commands should inherit from this, for reasons."""
 
-        __known_flags__ = []
+        _known_flags = []
 
         @classmethod
         def _call(cls, data_store, aliases, *args):
@@ -41,7 +41,8 @@ class CLI(object):
 
         @classmethod
         def check_flags(cls, flags):
-            bad_flags = [f for f in flags if f not in cls.__known_flags__]
+            print flags
+            bad_flags = [f for f in flags if f not in cls._known_flags]
             if bad_flags:
                 print cls.help()
                 cls.fail(
@@ -161,7 +162,7 @@ class CLI(object):
                 print command.help(data_store, aliases, args, flags)
                 exit(0)
 
-            if command.__known_flags__:
+            if command._known_flags:
                 command.check_flags(flags)
             return command._call(data_store, aliases, args, flags)
 
@@ -216,7 +217,7 @@ class CLI(object):
         --keys-only     Only display keys
         --detail=<keys> Display only the keys specififed, and their values
         """
-        __known_flags__ = [
+        _known_flags = [
             'show-blanks', 'detail', 'keys-only', 'exportable', 'table']
 
         @classmethod
@@ -290,7 +291,7 @@ class CLI(object):
                         (Useful for one-off uses that you don't use often
                         enough to justify writing a plugin)
         """
-        __flags__ = ['shell-override', 'plugin']
+        _known_flags = ['shell-override', 'plugin']
 
         @classmethod
         def _call(cls, data_store, aliases, args, flags):
@@ -319,7 +320,7 @@ class CLI(object):
         --show-alias:   Prints the alias used before making the client call.
                         Useful when making calls to multiple aliases.
         """
-        __flags__ = ['show-alias', 'no-stderr']
+        _known_flags = ['show-alias', 'no-stderr']
 
         @classmethod
         def _dispatch_to_shell(cls, cmd, data_store, alias, args, flags):
