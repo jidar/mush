@@ -1,31 +1,23 @@
 #! /usr/bin/python
-import csv
 import os
 import sys
 import prettytable
-from subprocess import call, Popen, PIPE, CalledProcessError
+from subprocess import call
 from collections import OrderedDict
 
-from mush.config import config
+from mush import config
 from mush.plugins import api
+
 
 # TODO: Maybe make this an auto interface like plugins.api
 class CLI(object):
-
-    @classmethod
-    def _command_names(cls, python_names=False):
-        cmds = []
-        for k, v in cls.__dict__.items():
-            try:
-                if cls._command in v.__mro__ and v.__name__ != '_command':
-                    name = k if python_names else k.replace('_', '-')
-                    cmds.append(name)
-            except Exception as e:
-                pass
-
-        # Remove all hidden commands
-        #[cmds.remove(cmd) for cmd in cmds if cmd.startswith(('-','_',))]
-        return cmds
+    # TODO: Get rid of all the classmethod-ness / make the entire thing
+    #       instantiate before running
+    # TODO: Now that everything is in the CLI class, make the thing
+    #       an interface, and make it extensible so that new extensions #
+    #       can add to the interface AND define plugins for those
+    #       interfaces-extensions. THEN move the implementation here to a
+    #       plugin.
 
     class _command(object):
         """All CLI commands should inherit from this, for reasons."""
@@ -38,7 +30,7 @@ class CLI(object):
 
         @classmethod
         def help(cls, *args, **kwargs):
-            return  cls.__doc__
+            return cls.__doc__
 
         @classmethod
         def check_aliases(cls, aliases):
@@ -53,7 +45,7 @@ class CLI(object):
                 print cls.help()
                 cls.fail(
                     'Unknown flag{}: {}'.format(
-                        's' if len(bad_flags)>1 else '',\
+                        's' if len(bad_flags) > 1 else '',
                         ", ".join(bad_flags)))
 
         @classmethod
@@ -67,6 +59,87 @@ class CLI(object):
             print reason
             exit(0)
 
+    @classmethod
+    def _command_names(cls, python_names=False):
+        cmds = []
+        for k, v in cls.__dict__.items():
+            try:
+                if cls._command in v.__mro__ and v.__name__ != '_command':
+                    name = k if python_names else k.replace('_', '-')
+                    cmds.append(name)
+            except Exception as e:
+                pass
+
+        return cmds
+
+    @classmethod
+    def run(cls, args):
+        # Get rid of the cmd
+        args.remove(args[0])
+
+        data_store = api.data_store()
+        mush_command = None
+        client_command = None
+        aliases = []
+        flags = {}
+
+        def quit_with_main_help(msg=None):
+            print msg
+            cls._dispatch("help", data_store, aliases, args, flags)
+            exit(1)
+
+        # Run Help if nothing else was passed in
+        if not args:
+            quit_with_main_help("No options given.")
+
+        known_aliases = data_store.available_aliases()
+        # Parse out the aliases, mush command and flags from the client 
+        # command / client command args
+        while args:
+            arg = args[0]
+            args.remove(arg)
+
+            # Grab any mush command.  Die if more than one is found
+            if arg in cls._command_names():
+                if mush_command:
+                    quit_with_main_help(
+                        "Only one mush command is allowed at a time")
+                if arg in known_aliases:
+                    quit_with_main_help(
+                        "Your alias '{}' collides with a mush command by the "
+                        "same name.  Please rename that alias".format('arg'))
+                mush_command = arg
+                continue
+
+            if arg in known_aliases:
+                aliases.append(arg)
+                continue
+
+            # Parse flags
+            if arg.startswith('--'):
+                arg = arg.lstrip('--')
+                val = arg.split('=', 1)
+                arg = val[0]
+                val = val[1] if len(val) == 2 else True
+                flags[arg] = val
+                continue
+
+            # if we hit a non-alias, non-flag, assume it's the
+            # start of the client command and stop the loop
+            # We'll put the client command back in args later
+            client_command = arg
+            break
+
+        if client_command and not mush_command:
+            args.insert(0, client_command)
+            mush_command = "call"
+            print "calling: {}".format(" ".join(args))
+        elif not client_command and not mush_command:
+            # If no mush command is set by this point, then no previous rule to set
+            # one applied, and one was not provided.  Call help for the user.
+            args, flags, mush_command = [], {}, "help"
+
+        cls._dispatch(mush_command, data_store, aliases, args, flags)
 
     @classmethod
     def _dispatch(cls, cmd, data_store, aliases, args, flags):
@@ -202,23 +275,28 @@ class CLI(object):
         """Spawn a new shell with all the environment variables set for 
         the given user/alias.
 
-        --shell <plugin>: Override configured persist-shell command.
-        --shellcmd <cmd>: Ignore any installed plugins and try to run this
-                          command directly.  (Not Recommended)
+        --plugin <plugin>: Override configured persist-shell plugin keyname.
+        --shell-override <cmd>:
+                           Ignore any installed plugins and try to run this
+                           command directly via a subprocess call.
+                           (Useful for one-off uses that you don't use often
+                            enough to justify writing a plugin)
         """
-        __known_flags__ = ['shellcmd', 'shell']
+        __known_flags__ = ['shell-override', 'plugin']
 
         @classmethod
         def _call(cls, data_store, aliases, args, flags):
             cls.check_aliases(aliases)
-            env = os.environ.copy()
-            if flags.get('shellcmd'):
-                call(flags.get('shellcmd'), env=env)
-            else:
-                for alias in aliases:
-                    env.update(data_store.environment_variables(alias))
-                    plugin = flags.get('shell', 'gnome-terminal')
-                    api.persist_shell(keyname=plugin).persist(env)
+
+            for alias in aliases:
+                env = os.environ.copy()
+                env.update(data_store.environment_variables(alias))
+                plugin_keyname = config.config.get(
+                    "default_plugins", "persist_shell")
+                if flags.get('shell-override'):
+                    call(flags.get('shell-override'), env=env)
+                    continue
+                api.persist_shell(keyname=plugin_keyname).persist(env)
 
 
     class call(_command):
@@ -243,7 +321,8 @@ class CLI(object):
             user_env = data_store.environment_variables(alias)
             env.update(user_env)
             cmd = "{} {}".format(cmd, " ".join(args))
-            call(cmd, stdout=sys.stdout, stderr=stderr_out, shell=True, env=env)
+            call(
+                cmd, stdout=sys.stdout, stderr=stderr_out, shell=True, env=env)
 
         @classmethod
         def _call(cls, data_store, aliases, args, flags):
@@ -273,54 +352,4 @@ class CLI(object):
 
 
 def entry_point():
-    args = sys.argv
-    args.remove(args[0])
-
-    data_store = api.data_store()
-    mush_command = None
-    client_command = None
-    aliases = []
-    flags = {}
-
-    # Run Help if nothing else was passed in
-    if not args:
-        CLI._dispatch("help", data_store, aliases, args, flags)
-        exit(0)
-
-    # Check if the first arg is a mush command, and pull it out if it is
-    if args[0] in CLI._command_names():
-        mush_command = args[0]
-        args.remove(args[0])
-
-    known_aliases = data_store.available_aliases()
-    # Parse out the rest of the args, seperating aliases from flags
-    # and the client command / client command args
-    while args:
-        arg = args[0]
-        args.remove(arg)
-
-        if arg in known_aliases:
-            aliases.append(arg)
-            continue
-
-        if arg.startswith('--'):
-            # Grab mush flags
-            arg = arg.lstrip('--')
-            val = arg.split('=', 1)
-            arg = val[0]
-            val = val[1] if len(val) == 2 else True
-            flags[arg] = val
-            continue
-
-        # if we hit a non-alias, non-flag, assume it's the
-        # start of the client command
-        client_command = arg
-        break
-
-    if not client_command and not mush_command:
-        args, flags, mush_command = [], {}, "help"
-    elif client_command and not mush_command:
-        args.insert(0, client_command)
-        mush_command = "call"
-
-    CLI._dispatch(mush_command, data_store, aliases, args, flags)
+    CLI.run(sys.argv)
