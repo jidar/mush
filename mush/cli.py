@@ -218,7 +218,8 @@ class CLI(object):
         --detail=<keys> Display only the keys specififed, and their values
         """
         _known_flags = [
-            'show-blanks', 'detail', 'keys-only', 'exportable', 'table']
+            'show-blanks', 'detail', 'keys-only', 'exportable', 'table',
+            'config-format']
 
         @classmethod
         def target_keys(cls, flags, env_vars):
@@ -243,6 +244,12 @@ class CLI(object):
             print "\n", "#", alias.upper()
             for k, v in env_vars.iteritems():
                 print "export {}={}".format(k, v)
+
+        @classmethod
+        def config_format(cls, alias, env_vars):
+            print "\n", "[{}]".format(alias)
+            for k, v in env_vars.iteritems():
+                print "{}={}".format(k, v)
 
         @classmethod
         def plaintext_list(cls, alias, env_vars):
@@ -272,10 +279,13 @@ class CLI(object):
                 if flags.get('exportable'):
                     cls.exportable(alias, env_vars)
 
-                if flags.get('table'):
+                elif flags.get('table'):
                     cls.table(alias, env_vars)
 
-                if not flags.get('table') and not flags.get('exportable'):
+                elif flags.get('config-format'):
+                    cls.config_format(alias, env_vars)
+
+                else:
                     cls.plaintext_list(alias, env_vars)
 
     class persist(_command):
@@ -300,11 +310,11 @@ class CLI(object):
             for alias in aliases:
                 env = os.environ.copy()
                 env.update(data_store.environment_variables(alias))
-                plugin_keyname = flags.get('plugin') or config.config.get(
-                    "default_plugins", "persist_shell")
                 if flags.get('shell-override'):
                     call(flags.get('shell-override'), env=env)
                     continue
+                plugin_keyname = flags.get('plugin') or config.config.get(
+                    "default_plugins", "persist_shell")
                 api.persist_shell(keyname=plugin_keyname).persist(
                     env, alias=alias)
 
