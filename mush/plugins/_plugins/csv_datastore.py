@@ -9,9 +9,11 @@ from mush.plugins import interfaces
 
 class data_store(interfaces.data_store):
     __keyname__="csv"
+    __config_defaults__ = {
+        'location':os.path.expanduser('~/.mush/datastore.csv')}
 
-    def __init__(self, data_file=None):
-        self.data_file = data_file or self.configured_data_file()
+    def __init__(self):
+        self.data_file = self.cfg("location")
         self._column_headers = list()
         self._row_data = OrderedDict()
         self._parse_csv()

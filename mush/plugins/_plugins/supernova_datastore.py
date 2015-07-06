@@ -11,10 +11,10 @@ from mush.plugins import interfaces
 
 class data_store(interfaces.data_store):
     __keyname__="supernova"
+    __config_defaults__ = {"location": os.path.expanduser("~/.supernova")}
 
-    def __init__(self, data_file=None):
-        possible_configs = [os.path.expanduser("~/.supernova"),
-                            ".supernova"]
+    def __init__(self):
+        possible_configs = [self.cfg('location'), '.supernova']
         self.supernova_config = ConfigParser.SafeConfigParser()
         try:
             self.supernova_config.read(possible_configs)

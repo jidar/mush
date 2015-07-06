@@ -68,6 +68,13 @@ class AutoRegisteringPlugin(object):
     __keyname__ = None
     __interface__ = None
     __api_visible__ = True
+    __config_defaults__ = {}
+
+    @classmethod
+    def cfg(cls, key):
+        return config.get(
+            cls.__interface__, cls.__keyname__, key,
+            defaults=cls.__config_defaults__)
 
 
 class persist_shell(AutoRegisteringPlugin):
@@ -88,12 +95,10 @@ class access_secret(AutoRegisteringPlugin):
 
 class data_store(AutoRegisteringPlugin):
     __interface__ = 'data_store'
+    __config_defaults__ = {'location':None}
 
     def __init__(self, data_file=None):
         raise NotImplementedError
-
-    def configured_data_file(self):
-        return os.path.expanduser(config.default("data_store", "location"))
 
     def environment_variables(self, alias):
         """Must accept a single string. Returns an OrderedDict"""

@@ -1,13 +1,13 @@
 import os
 from subprocess import Popen, PIPE
-from mush.config import config
 from mush.plugins import interfaces
 
 class access_secret(interfaces.access_secret):
     __keyname__="exec_bash"
+    __config_defaults__ = {'magic_prefix':'EXEC_BASH:'}
 
     def __call__(self, environment_variables):
-        prefix = config.get("access_secret.exec_bash", "magic_prefix")
+        prefix = self.cfg("magic_prefix")
         for k,v in environment_variables.iteritems():
             if v.startswith(prefix):
                 cmd = v.replace(prefix, '')

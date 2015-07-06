@@ -3,7 +3,7 @@ Automatically builds the api from the available interface implementations
 """
 import pkgutil
 from mush import plugins
-from mush.config import config
+from mush import config
 from mush.plugins import interfaces
 __loaded__ = False
 
@@ -13,7 +13,7 @@ class _APICallClass(object):
         self.interface = interface
 
     def __call__(self, *args, **kwargs):
-        keyname = config.get('default_plugins', self.interface)
+        keyname = config._config.get('default_plugins', self.interface)
         if kwargs.get('keyname'):
             keyname = kwargs.get('keyname')
             kwargs.pop('keyname')

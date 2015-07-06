@@ -41,7 +41,6 @@ class CLI(object):
 
         @classmethod
         def check_flags(cls, flags):
-            print flags
             bad_flags = [f for f in flags if f not in cls._known_flags]
             if bad_flags:
                 print cls.help()
@@ -80,8 +79,18 @@ class CLI(object):
     def run(cls, args):
         # Get rid of the cmd
         args.remove(args[0])
+        data_store = None
+        known_aliases = []
 
-        data_store = api.data_store()
+        if len(args) > 0 and args[0] != 'generate-config':
+            failmsg = config.check()
+            if failmsg:
+                print failmsg
+                print "Please run mush generate-config --help for more info"
+                exit(1)
+            data_store = api.data_store()
+            known_aliases = data_store.available_aliases()
+
         mush_command = None
         client_command = None
         aliases = []
@@ -96,7 +105,6 @@ class CLI(object):
         if not args:
             quit_with_main_help("No options given.")
 
-        known_aliases = data_store.available_aliases()
         # Parse out the aliases, mush command and flags from the client
         # command / client command args
         while args:
@@ -137,7 +145,7 @@ class CLI(object):
         if client_command and not mush_command:
             args.insert(0, client_command)
             mush_command = "call"
-            print "calling: {}".format(" ".join(args))
+            print "{}".format(" ".join(args))
         elif not client_command and not mush_command:
             # If no mush command is set by this point, then no previous rule
             # to set one applied, and a mush command was not provided.
@@ -212,6 +220,8 @@ class CLI(object):
         --exportable    Display the environment vars such that you can copy
                         them and paste them as a bash command.
         --table         Display the environment vars in a pretty table.
+        --config-format Display the environment vars in config section format
+                        (for easy copy-paste into a config file)
         --show-blanks   Also display keys that have no configured value
                         (By default, those keys are not show)
         --keys-only     Only display keys
@@ -313,7 +323,7 @@ class CLI(object):
                 if flags.get('shell-override'):
                     call(flags.get('shell-override'), env=env)
                     continue
-                plugin_keyname = flags.get('plugin') or config.config.get(
+                plugin_keyname = flags.get('plugin') or config._config.get(
                     "default_plugins", "persist_shell")
                 api.persist_shell(keyname=plugin_keyname).persist(
                     env, alias=alias)
@@ -357,17 +367,29 @@ class CLI(object):
                     cmd, data_store, alias, args,
                     {'no-stderr': flags.get('no-stderr')})
 
-    # class generate_config(_command):
-    #     """Generates a configuration file based on available plugins"""
+    class generate_config(_command):
+        """Generates a configuration file based on available plugins"""
 
-    #     @classmethod
-    #     def _call(cls, data_store, aliases, args, flags):
-    #         from mush.plugins.interfaces import registry
-    #         for interface in registry.plugins().keys():
-    #             print ''
-    #             for keyname in registry.plugins(interface):
-    #                 string = "[{}.{}]".format(interface, keyname)
-    #                 print string
+        @classmethod
+        def _call(cls, data_store, aliases, args, flags):
+            print ''
+            from mush.plugins.interfaces import registry
+
+            print "[default_plugins]"
+            print "# Choose one default plugin per interface"
+            for interface in registry.interfaces():
+                interface_name = interface.__interface__
+                plugins = ", ".join([p for p in registry.plugins(interface_name)])
+                print "{}={}".format(interface_name, plugins)
+
+            print ''
+            for interface in registry.plugins().keys():
+                for keyname in registry.plugins(interface):
+                    print "[{}.{}]".format(interface, keyname)
+                    for k,v in registry.plugin(interface, keyname).__config_defaults__.items():
+                        print "{}={}".format(k,v)
+                    print ''
+
 
 
 def entry_point():

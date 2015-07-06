@@ -1,14 +1,15 @@
 import os
 import keyring
-from mush.config import config
 from mush.plugins import interfaces
 
 class access_secret(interfaces.access_secret):
     __keyname__="keyring"
+    __config_defaults__ = {'magic_prefix': 'KEYRING:', 'service': 'mush'}
 
     def __call__(self, environment_variables):
-        magic_prefix = config.get("access_secret.keyring", "magic_prefix")
-        service_name = config.get("access_secret.keyring", "service")
+        magic_prefix = self.cfg("magic_prefix")
+        service_name = self.cfg("service")
+
         for key, val in environment_variables.iteritems():
             if val.startswith(magic_prefix):
                 keyring_key = val.replace(magic_prefix, '')

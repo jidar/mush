@@ -13,4 +13,9 @@ class persist_shell(interfaces.persist_shell):
     def persist(env, *args, **kwargs):
         alias = kwargs.get('alias', '')
         cmd = 'guake -n {tabname}; guake -r {tabname}'.format(tabname=alias)
-        call(cmd, env=env, shell=True)
+        exp_env = ['export "{}={}"'.format(k,v) for k, v in env.items()]
+        print exp_env
+        exit()
+        env_export_cmd = ';'.join()
+        cmd = "guake -n {tabname}; guake -r {tabname} -e '{env_export_cmd}'".format(tabname=alias, env_export_cmd=env_export_cmd)
+        call(cmd, shell=True)
