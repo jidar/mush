@@ -368,13 +368,22 @@ class CLI(object):
                     {'no-stderr': flags.get('no-stderr')})
 
     class generate_config(_command):
-        """Generates a configuration file based on available plugins"""
+        """
+        Generates a configuration file based on available plugins.
+        Each plugin will define a section with default key/value pairs.
+        the [default_plugins] section is where you'll decide what plugins
+        you want to use. Make sure to set only one item per line in the 
+        [default_plugins] section.
+
+        Copy this into a file named 'config' in ~/.mush:
+        """
 
         @classmethod
         def _call(cls, data_store, aliases, args, flags):
-            print ''
             from mush.plugins.interfaces import registry
 
+            print cls.__doc__
+            print '#BEGIN CONFIG'
             print "[default_plugins]"
             print "# Choose one default plugin per interface"
             for interface in registry.interfaces():
@@ -384,11 +393,16 @@ class CLI(object):
 
             print ''
             for interface in registry.plugins().keys():
-                for keyname in registry.plugins(interface):
-                    print "[{}.{}]".format(interface, keyname)
-                    for k,v in registry.plugin(interface, keyname).__config_defaults__.items():
-                        print "{}={}".format(k,v)
-                    print ''
+                keynames = registry.plugins(interface)
+                for keyname in keynames:
+                    plugin = registry.plugin(interface, keyname)
+                    plugin_config = plugin.__config_defaults__
+                    if plugin.__config_defaults__:
+                        print "[{}.{}]".format(interface, keyname)
+                        for k,v in plugin.__config_defaults__.items():
+                            print "{}={}".format(k,v)
+                        print ''
+            print '#END CONFIG'
 
 
 
