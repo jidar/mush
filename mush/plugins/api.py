@@ -1,11 +1,12 @@
 """
-Automatically builds the api from the available interface implementations 
+Automatically builds the api from the available interface implementations
 """
 import pkgutil
 from mush import plugins
 from mush import config
 from mush.plugins import interfaces
 __loaded__ = False
+
 
 class _APICallClass(object):
 
@@ -34,11 +35,13 @@ def load(plugin_paths=None):
         # Import the current module
         if '_plugins' in module_name:
             try:
-                module = loader.find_module(module_name).load_module(module_name)
+                module = \
+                    loader.find_module(module_name).load_module(module_name)
             except Exception as exception:
                 print "Unable to load plugin ", module.__name__
                 print exception
                 continue
+
 
 # Load plugin modules
 if not __loaded__:
