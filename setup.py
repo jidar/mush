@@ -6,6 +6,7 @@ from setuptools.command.test import test as TestCommand
 # Normal setup stuff
 setup(
     name='mush',
+    install_requires=['prettytable'],
     packages=find_packages(),
     zip_safe=False,
     entry_points={
