@@ -4,6 +4,7 @@ import os
 
 from mush import config
 
+
 # Stores all registered extensions in this module
 class _Registry(dict):
 
@@ -44,7 +45,7 @@ def fallthrough_pipeline(*pipeline_interfaces):
 
 
 class _AutoRegisteringPluginMeta(type):
-    """Plugin interfaces should metaclass from this class in order to be 
+    """Plugin interfaces should metaclass from this class in order to be
     registered as an implementation of their target interface."""
 
     def __new__(cls, class_name, bases, attrs):

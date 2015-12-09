@@ -8,9 +8,9 @@ from mush.plugins import interfaces
 
 
 class data_store(interfaces.data_store):
-    __keyname__="csv"
+    __keyname__ = "csv"
     __config_defaults__ = {
-        'location':os.path.expanduser('~/.mush/datastore.csv')}
+        'location': os.path.expanduser('~/.mush/datastore.csv')}
 
     def __init__(self):
         self.data_file = self.cfg("location")
@@ -35,9 +35,9 @@ class data_store(interfaces.data_store):
         csv_data = csv.reader(csv_file, delimiter=',', quotechar='"')
         self._column_headers = csv_data.next()[1:]
 
-        #parse data
+        # Parse data
         for row in csv_data:
-            #Extract the row data
+            # Extract the row data
             row_header = row[0]
             row_list = row[1:]
-            self._row_data[row_header]=row_list
+            self._row_data[row_header] = row_list

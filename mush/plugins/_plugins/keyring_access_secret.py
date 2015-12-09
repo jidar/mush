@@ -2,8 +2,9 @@ import os
 import keyring
 from mush.plugins import interfaces
 
+
 class access_secret(interfaces.access_secret):
-    __keyname__="keyring"
+    __keyname__ = "keyring"
     __config_defaults__ = {'magic_prefix': 'KEYRING:', 'service': 'mush'}
 
     def __call__(self, environment_variables):
@@ -17,7 +18,7 @@ class access_secret(interfaces.access_secret):
                 try:
                     keyring_val = keyring.get_password(
                         service_name, keyring_key)
-                except exception as e:
+                except Exception as e:
                     print e
                     environment_variables[key] = val
                 environment_variables[key] = keyring_val
