@@ -1,7 +1,5 @@
-import sys
 from setuptools import setup, find_packages
-from setuptools.command.install import install as _install
-from setuptools.command.test import test as TestCommand
+
 
 # Normal setup stuff
 setup(

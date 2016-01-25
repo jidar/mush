@@ -1,4 +1,4 @@
-                          ,ma-account-alias
+                          ,myaccount
 OS_REGION_NAME            ,DFW
 OS_REGION                 ,
 OS_TENANT_NAME            ,000000
@@ -6,23 +6,23 @@ OS_TENANT_ID              ,000000
 OS_USERNAME               ,fakeuser
 OS_PASSWORD               ,myapikey
 CINDERCLIENT_INSECURE     ,0
-CINDER_VOLUME_SERVICE_NAME,cloudBlockStorage
+CINDER_VOLUME_SERVICE_NAME,myCinderServiceName
 CINDER_RAX_AUTH           ,1
 NOVA_RAX_AUTH             ,1
 NOVA_VERSION              ,1.1
 NOVACLIENT_INSECURE       ,0
-NOVA_SERVICE_NAME         ,cloudServersOpenStack
-NOVA_VOLUME_SERVICE_NAME  ,cloudBlockStorage
+NOVA_SERVICE_NAME         ,myNovaServiceName
+NOVA_VOLUME_SERVICE_NAME  ,myCinderServiceName
 NOVA_URL                  ,
 NOVA_USERNAME             ,
 NOVA_API_KEY              ,
 NOVA_PROJECT_ID           ,
-OS_AUTH_URL               ,https://identity.api.rackspacecloud.com/v2.0/
+OS_AUTH_URL               ,https://authurl.com/v2.0/
 OS_NO_CACHE               ,0
-OS_AUTH_SYSTEM            ,rackspace
-ST_AUTH                   ,https://identity.api.rackspacecloud.com/v1.0
+OS_AUTH_SYSTEM            ,
+ST_AUTH                   ,https://authurl.com/v1.0/
 ST_USER                   ,fakeuser
 ST_KEY                    ,myapikey
-SWIFTLY_AUTH_URL          ,https://identity.api.rackspacecloud.com/v1.0
+SWIFTLY_AUTH_URL          ,https://authurl.com/v1.0/
 SWIFTLY_AUTH_USER         ,
 SWIFTLY_AUTH_KEY          ,myapikey
