@@ -63,14 +63,15 @@ class CLI(object):
     @classmethod
     def _command_names(cls, python_names=False):
         cmds = []
-        # Gather all the classes that inherit from _command, except for _command
+        # Gather all the classes that inherit from _command,
+        # (except for _command)
         for k, v in cls.__dict__.items():
             try:
                 if issubclass(v, cls._command) and v is not cls._command:
                     name = k if python_names else k.replace('_', '-')
                     cmds.append(name)
             except TypeError:
-                # The dict is full of things that aren't classes, so 
+                # The dict is full of things that aren't classes, so
                 # issubclass explodes when they're passed in.
                 pass
         return cmds
@@ -102,7 +103,7 @@ class CLI(object):
             exit(1)
 
         # Run Help if nothing else was passed in
-        if not args:
+        if len(args) <= 0:
             quit_with_main_help("No options given.")
 
         # Parse out the aliases, mush command and flags from the client
@@ -111,15 +112,15 @@ class CLI(object):
             arg = args[0]
             args.remove(arg)
 
-            # Grab any mush command.  Die if more than one is found
+            # Grab any mush command.  Die if more than one is found.
             if arg in cls._command_names():
+                if arg in known_aliases:
+                    quit_with_main_help(
+                        "Your alias '{0}' collides with a mush command by the "
+                        "same name.  Please rename that alias".format(arg))
                 if mush_command:
                     quit_with_main_help(
                         "Only one mush command is allowed at a time")
-                if arg in known_aliases:
-                    quit_with_main_help(
-                        "Your alias '{}' collides with a mush command by the "
-                        "same name.  Please rename that alias".format('arg'))
                 mush_command = arg
                 continue
 
@@ -143,6 +144,7 @@ class CLI(object):
             break
 
         if client_command and not mush_command:
+            # Issue the 'call' mush command by default
             args.insert(0, client_command)
             mush_command = "call"
             print "{}".format(" ".join(args))
@@ -233,7 +235,7 @@ class CLI(object):
 
         @classmethod
         def target_keys(cls, flags, env_vars):
-            """ Builds the list of keys that wil be used by the 
+            """ Builds the list of keys that wil be used by the
             print/formatting functions"""
 
             if not flags.get('show-blanks'):
@@ -283,9 +285,8 @@ class CLI(object):
                 env_vars = cls.target_keys(
                     flags, data_store.environment_variables(alias))
 
-                # TODO: Once this class is an interface, make this call
-                # pluggable so that more print options can be added via 
-                # plugins.
+                # TODO: Make this call pluggable so that more print options
+                #       can be added later.
                 if flags.get('exportable'):
                     cls.exportable(alias, env_vars)
 
@@ -303,7 +304,7 @@ class CLI(object):
         the given user/alias.
 
         <alias>:        Requires one alias.
-        --plugin <plugin>: 
+        --plugin <plugin>:
                         Override configured persist-shell plugin keyname.
         --shell-override <cmd>:
                         Ignore any installed plugins and try to run this
@@ -372,7 +373,7 @@ class CLI(object):
         Generates a configuration file based on available plugins.
         Each plugin will define a section with default key/value pairs.
         the [default_plugins] section is where you'll decide what plugins
-        you want to use. Make sure to set only one item per line in the 
+        you want to use. Make sure to set only one item per line in the
         [default_plugins] section.
 
         Copy this into a file named 'config' in ~/.mush:
@@ -388,7 +389,8 @@ class CLI(object):
             print "# Choose one default plugin per interface"
             for interface in registry.interfaces():
                 interface_name = interface.__interface__
-                plugins = ", ".join([p for p in registry.plugins(interface_name)])
+                plugins = ", ".join(
+                    [p for p in registry.plugins(interface_name)])
                 print "{}={}".format(interface_name, plugins)
 
             print ''
@@ -396,14 +398,12 @@ class CLI(object):
                 keynames = registry.plugins(interface)
                 for keyname in keynames:
                     plugin = registry.plugin(interface, keyname)
-                    plugin_config = plugin.__config_defaults__
                     if plugin.__config_defaults__:
                         print "[{}.{}]".format(interface, keyname)
-                        for k,v in plugin.__config_defaults__.items():
-                            print "{}={}".format(k,v)
+                        for k, v in plugin.__config_defaults__.items():
+                            print "{}={}".format(k, v)
                         print ''
             print '#END CONFIG'
-
 
 
 def entry_point():

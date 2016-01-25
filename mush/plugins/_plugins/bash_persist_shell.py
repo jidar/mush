@@ -7,7 +7,7 @@ from mush.plugins import interfaces
 
 
 class persist_shell(interfaces.persist_shell):
-    __keyname__="bash"
+    __keyname__ ="bash"
 
     @staticmethod
     def persist(env, *args, **kwargs):

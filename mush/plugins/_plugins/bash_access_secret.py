@@ -1,14 +1,14 @@
-import os
 from subprocess import Popen, PIPE
 from mush.plugins import interfaces
 
+
 class access_secret(interfaces.access_secret):
-    __keyname__="exec_bash"
-    __config_defaults__ = {'magic_prefix':'EXEC_BASH:'}
+    __keyname__ = "exec_bash"
+    __config_defaults__ = {'magic_prefix': 'EXEC_BASH:'}
 
     def __call__(self, environment_variables):
         prefix = self.cfg("magic_prefix")
-        for k,v in environment_variables.iteritems():
+        for k, v in environment_variables.iteritems():
             if v.startswith(prefix):
                 cmd = v.replace(prefix, '')
                 p = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)

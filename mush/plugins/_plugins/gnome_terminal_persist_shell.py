@@ -7,7 +7,7 @@ from mush.plugins import interfaces
 
 
 class persist_shell(interfaces.persist_shell):
-    __keyname__="gnome-terminal"
+    __keyname__ = "gnome-terminal"
 
     @staticmethod
     def persist(env, *args, **kwargs):

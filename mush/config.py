@@ -9,15 +9,17 @@ if os.path.exists(_localpath):
 _config = ConfigParser.RawConfigParser()
 _config.read(_cfgpath)
 
+
 def check(append_failmsg=None):
     """Try loading the default config section, return a failure message on
     failure"""
     try:
-        resp = _config.get('default_plugins', 'data_store')
+        _config.get('default_plugins', 'data_store')
     except ConfigParser.NoSectionError:
         return (
             'Could not find a [default_plugins] section in the '
             'mush config located at {}'.format(_cfgpath))
+
 
 def get(interface, keyname, key, defaults=None):
     try:
@@ -26,9 +28,10 @@ def get(interface, keyname, key, defaults=None):
         defaults = defaults or dict()
         return defaults.get(key)
 
+
 def get_default(interface, key):
     """Returns the value of the key for the default implementation of the
-    provided interface, as defined in the 'default_plugins' section in 
+    provided interface, as defined in the 'default_plugins' section in
     the mush config file"""
     section = "{}.{}".format(
         interface, _config.get('default_plugins', interface))

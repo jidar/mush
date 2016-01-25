@@ -1,8 +1,5 @@
-from collections import OrderedDict
-from subprocess import call, Popen, PIPE, CalledProcessError
-import os
-
 from mush import config
+
 
 # Stores all registered extensions in this module
 class _Registry(dict):
@@ -44,7 +41,7 @@ def fallthrough_pipeline(*pipeline_interfaces):
 
 
 class _AutoRegisteringPluginMeta(type):
-    """Plugin interfaces should metaclass from this class in order to be 
+    """Plugin interfaces should metaclass from this class in order to be
     registered as an implementation of their target interface."""
 
     def __new__(cls, class_name, bases, attrs):
@@ -56,7 +53,7 @@ class _AutoRegisteringPluginMeta(type):
             registry['plugins'][plugin.__interface__] = \
                 registry['plugins'].get(plugin.__interface__, dict())
             registry['plugins'][plugin.__interface__][plugin.__keyname__]\
-                =plugin
+                = plugin
         elif not plugin.__keyname__ and plugin.__interface__:
             registry['interfaces'].append(plugin)
 
@@ -95,7 +92,7 @@ class access_secret(AutoRegisteringPlugin):
 
 class data_store(AutoRegisteringPlugin):
     __interface__ = 'data_store'
-    __config_defaults__ = {'location':None}
+    __config_defaults__ = {'location': None}
 
     def __init__(self, data_file=None):
         raise NotImplementedError
