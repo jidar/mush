@@ -1,4 +1,3 @@
-import os
 import keyring
 from mush.plugins import interfaces
 

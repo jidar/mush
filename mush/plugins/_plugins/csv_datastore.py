@@ -1,8 +1,6 @@
 # This contains the default implementations for all of mush's interfaces.
 import csv
 import os
-import prettytable
-import sys
 from collections import OrderedDict
 from mush.plugins import interfaces
 
