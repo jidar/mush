@@ -7,7 +7,7 @@ try:
 except:
     import configparser as ConfigParser
 
-from mush.plugins import interfaces
+from mush import engine, interfaces
 
 
 class data_store(interfaces.data_store):
@@ -28,7 +28,7 @@ Ensure that you have a properly configured supernova configuration file called
             print(msg)
             sys.exit(1)
 
-    @interfaces.fallthrough_pipeline('access_secret')
+    @engine.fallthrough_pipeline('access_secret')
     def environment_variables(self, alias):
         # Extract the relevant environment variables for alias
         env_vars = OrderedDict()

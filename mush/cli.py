@@ -2,10 +2,10 @@
 import os
 import prettytable
 import sys
-from subprocess import call
 from collections import OrderedDict
-from mush import config
-from mush.plugins import api
+from subprocess import call
+from mush import api
+from mush.engine import config
 
 
 # TODO: Maybe make this an auto interface like plugins.api

@@ -1,9 +1,9 @@
 import keyring
-from mush.plugins import interfaces
+from mush import interfaces
 
 
 class access_secret(interfaces.access_secret):
-    __keyname__ = "keyring"
+    __keyname__ = "python_keyring"
     __config_defaults__ = {'magic_prefix': 'KEYRING:', 'service': 'mush'}
 
     def __call__(self, environment_variables):

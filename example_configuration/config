@@ -1,0 +1,18 @@
+[default_plugins]
+# Choose one default plugin per interface
+persist_shell=gnome-terminal
+access_secret=python_keyring
+data_store=csv
+
+[access_secret.exec_bash]
+magic_prefix=EXEC_BASH:
+
+[access_secret.python_keyring]
+magic_prefix=KEYRING:
+service=mush
+
+[data_store.supernova]
+location=~/.supernova`
+
+[data_store.csv]
+location=~/.mush/datastore.csv
