@@ -3,12 +3,12 @@ Adds support for persisting into a new graphical shell, instead of
 just the current shell
 """
 from subprocess import call
-from mush.plugins import interfaces
+from mush import interfaces
 
 
 class persist_shell(interfaces.persist_shell):
-    __keyname__ = "gnome-terminal"
+    __keyname__ = "bash"
 
     @staticmethod
     def persist(env, *args, **kwargs):
-        call('gnome-terminal', env=env)
+        call('bash', env=env)

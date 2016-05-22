@@ -1,5 +1,5 @@
 from subprocess import Popen, PIPE
-from mush.plugins import interfaces
+from mush import interfaces
 
 
 class access_secret(interfaces.access_secret):

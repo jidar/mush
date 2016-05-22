@@ -2,7 +2,7 @@
 import csv
 import os
 from collections import OrderedDict
-from mush.plugins import interfaces
+from mush import interfaces, engine
 
 
 class data_store(interfaces.data_store):
@@ -16,7 +16,7 @@ class data_store(interfaces.data_store):
         self._row_data = OrderedDict()
         self._parse_csv()
 
-    @interfaces.fallthrough_pipeline('access_secret')
+    @engine.fallthrough_pipeline('access_secret')
     def environment_variables(self, alias):
         # Extract the relevant environment variables for alias
         env_vars = OrderedDict()
