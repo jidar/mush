@@ -1,4 +1,4 @@
- # mush
+# mush
 A helpful multi-utility cli that takes care of a lot of the configuration needed to use the various openstack clients.
 
 ## Configuration after initial install
@@ -27,7 +27,7 @@ These sections will be read and used if the plugin is defined as the default plu
 The example config contains empty sections for all included interfaces and their plugins.
 
 
-## The basic idea / The origin or mush
+## The basic idea / The origin of mush
 
 Working with the openstack command line utilities can be a little frustrating at times, especially if you routinely have to use several different combinations of users and environment-specific configuration for different deployments.
 
@@ -73,7 +73,7 @@ it's making that call to the plugin you've configured mush to use.
 
 ###datastore.supernova
 
-If you're used to using Major's supernova client for Openstack clients, this plugin will allow you to your .supernova
+If you're also using Major's supernova client for Openstack clients, this plugin will allow you to your .supernova
 file as a datastore for mush.
 
 To use:
