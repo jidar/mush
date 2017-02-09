@@ -28,6 +28,6 @@ class data_store(engine.AutoRegisteringPlugin):
         """Must accept a single string. Returns an OrderedDict"""
         raise NotImplementedError
 
-    def aliases(self):
+    def available_aliases(self):
         """Returns a List"""
         raise NotImplementedError

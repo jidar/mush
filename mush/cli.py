@@ -219,6 +219,8 @@ class CLI(object):
         defined.  By default this is a list of strings.
 
         <alias(es)>:    Requires at least one alias.
+        --all-aliases   Overrides aliases positional argument and applies
+                        filter to entire datastore.
         --exportable    Display the environment vars such that you can copy
                         them and paste them as a bash command.
         --table         Display the environment vars in a pretty table.
@@ -231,7 +233,7 @@ class CLI(object):
         """
         _known_flags = [
             'show-blanks', 'detail', 'keys-only', 'exportable', 'table',
-            'config-format']
+            'config-format', 'all-aliases']
 
         @classmethod
         def target_keys(cls, flags, env_vars):
@@ -280,7 +282,13 @@ class CLI(object):
 
         @classmethod
         def _call(cls, data_store, aliases, args, flags):
-            cls.check_aliases(aliases)
+
+            if flags.get('all-aliases'):
+                aliases = data_store.available_aliases()
+            else:
+                cls.check_aliases(aliases)
+
+            print aliases
             for alias in aliases:
                 env_vars = cls.target_keys(
                     flags, data_store.environment_variables(alias))
